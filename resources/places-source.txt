@@ -1,0 +1,41 @@
+GeoNames geographic search data attribution
+
+Contains modified GeoNames data: https://www.geonames.org/
+Licensed under Creative Commons Attribution 4.0 International (CC BY 4.0).
+License: https://creativecommons.org/licenses/by/4.0/
+GeoNames provides data as-is, without warranty of accuracy, timeliness or completeness.
+Snapshot acquisition date (UTC): 2026-10-13
+Generator Unicode version: 16.0.0
+
+Primary source inputs (original bytes, SHA-256):
+https://download.geonames.org/export/dump/cities5000.zip
+  a8ea0640263209c573536d15cb28cb666ee0f292f4f4f6da669e007fd021b49f
+https://download.geonames.org/export/dump/admin1CodesASCII.txt
+  1da92a6323a5fec3176f3f743bf4cf4040fd56a876da55e46fbca23c863aa60a
+https://download.geonames.org/export/dump/countryInfo.txt
+  c5997ea659df5bcf42509eb937064d172b2a998bb873608603e8421d714a9974
+
+Coverage: GeoNames cities5000 worldwide: population > 5,000 or PPLA
+(seat of a first-order administrative division), as defined by GeoNames.
+Input city records: 69801; bundled city records: 69801.
+Countries/territories represented: 245; regions: 3794; IANA timezones: 371.
+places.tsv: 9084325 bytes.
+Modifications: joined country/admin1 names and codes, retained all distinct
+normalized city alternate names (including ASCII transliterations),
+precomputed Unicode NFKD/lowercase accent-insensitive search keys, grouped
+shared metadata and sorted cities by population, normalized name and source ID.
+Same-name/same-region records distinguished with GeoNames IDs: 861.
+Country search covers English source names, ISO2/ISO3 codes and country TLDs.
+Region search covers source names, ASCII names and GeoNames administrative codes;
+those codes are generally FIPS, not universally ISO state abbreviations.
+Missing administrative names: 59 unique country/admin1 codes; these show city and country only.
+Missing administrative codes: AW., AW.00, BL.00, BN.00, CC., CI.00, CN., CW., CW.00, CX.00, EG.00, EH., EH.00, EH.CE, ET.28, FK.00, GB., GG., GI., GI.00, GS.00, GW.00, HK., HK.00, HU.19, ID.00, IL.00, JE., KE.03, KY.00, KZ.00, LS.00, MF.00, MO., MO.02, MR., MU., MU.00, NF.00, NU.00, PH.00, PN., SC., SG., SG.00, SG.01, SG.02, SG.03, SG.04, SG.05, SX., SX.00, TC., TC.00, TM.00, VA., VG.00, VN.00, WS.00
+Skipped city records: none
+Not every village or hamlet is covered. Alternate names may be historical.
+No online geocoding, user locations, or weather requests are used by city search.
+
+Reproduction: preserve the three input files with the hashes above; run
+python3 resources/build-places.py --source-dir /path/to/snapshot --snapshot-date 2026-10-13
+Python 3.9+ standard library and system IANA timezone data are required.
+Use the Unicode version above for byte-identical normalization output.
+Without --source-dir the generator downloads current public exports; these change daily.

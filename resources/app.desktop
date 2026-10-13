@@ -1,0 +1,13 @@
+[Desktop Entry]
+Name=Date & Notifications
+Comment=Calendar, notifications, media, world clocks and weather
+Type=Application
+Exec=cosmic-applet-datetime-plus
+Terminal=false
+Categories=Utility;Clock;
+Keywords=COSMIC;Applet;Calendar;Notifications;Weather;Clock;
+Icon=io.github.cosmic-applet-datetime-plus-symbolic
+NoDisplay=true
+X-CosmicApplet=true
+X-NotificationsApplet=true
+X-CosmicHoverPopup=Auto
