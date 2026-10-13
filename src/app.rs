@@ -137,8 +137,6 @@ pub struct AppModel {
     core: cosmic::Core,
     popup: Option<Id>,
     screen_size: Option<(f32, f32)>,
-    screen_generation: u64,
-    popup_pending: bool,
     now: DateTime<Local>,
     local_zone: Option<Tz>,
     local_zone_minute: i64,
@@ -198,8 +196,7 @@ pub struct AppModel {
 pub enum Message {
     TogglePopup,
     PopupClosed(Id),
-    ScreenChanged,
-    ScreenSize(u64, Option<(f32, f32)>),
+    ScreenSize((f32, f32)),
     OverviewViewed(Id),
     Tick,
     WeatherTick,
@@ -260,7 +257,6 @@ impl std::fmt::Debug for Message {
         formatter.write_str(match self {
             Self::TogglePopup => "TogglePopup",
             Self::PopupClosed(_) => "PopupClosed",
-            Self::ScreenChanged => "ScreenChanged",
             Self::ScreenSize(..) => "ScreenSize",
             Self::OverviewViewed(_) => "OverviewViewed",
             Self::Tick => "Tick",
@@ -329,8 +325,6 @@ impl AppModel {
             core,
             popup: None,
             screen_size: None,
-            screen_generation: 0,
-            popup_pending: false,
             now,
             local_zone: system_timezone(),
             local_zone_minute: now.timestamp().div_euclid(60),
@@ -400,13 +394,6 @@ impl AppModel {
             self.local_zone = system_timezone();
             self.local_zone_minute = minute;
         }
-    }
-
-    fn query_screen_size(&mut self) -> Task<cosmic::Action<Message>> {
-        self.screen_generation = self.screen_generation.wrapping_add(1);
-        let generation = self.screen_generation;
-        crate::display::size(&self.core)
-            .map(move |size| cosmic::Action::App(Message::ScreenSize(generation, size)))
     }
 
     fn open_popup(&mut self) -> Task<cosmic::Action<Message>> {
@@ -1289,8 +1276,8 @@ impl AppModel {
     }
 
     fn overview(&self) -> Element<'_, Message> {
-        let mut left = widget::column([]).width(Length::Fill).spacing(13);
-        let mut right = widget::column([]).width(Length::Fill).spacing(13);
+        let mut left = widget::column([]).width(Length::Fill).spacing(9);
+        let mut right = widget::column([]).width(Length::Fill).spacing(9);
         for placement in &self.preferences.layout {
             if let Some(section) = self.section_view(placement.section) {
                 match placement.side {
@@ -1722,7 +1709,7 @@ impl cosmic::Application for AppModel {
 
     fn init(core: cosmic::Core, _flags: ()) -> (Self, Task<cosmic::Action<Message>>) {
         let mut app = Self::new(core);
-        let task = Task::batch([app.load_config(), app.query_screen_size()]);
+        let task = app.load_config();
         (app, task)
     }
 
@@ -1861,7 +1848,8 @@ impl cosmic::Application for AppModel {
             notifications::subscription(&self.core).map(Message::NotificationEvent),
             media::subscription().map(Message::MediaEvent),
             agenda::subscription().map(|event| Message::Agenda(agenda_ui::Message::Event(event))),
-            crate::display::changes().map(|_| Message::ScreenChanged),
+            crate::display::panel_size(self.core.applet.output_name.clone())
+                .map(Message::ScreenSize),
         ];
         if let Some(popup) = self.popup
             && self.history.unread()
@@ -1893,21 +1881,7 @@ impl cosmic::Application for AppModel {
 
     fn update(&mut self, message: Message) -> Task<cosmic::Action<Message>> {
         match message {
-            Message::ScreenChanged => return self.query_screen_size(),
-            Message::ScreenSize(generation, size) => {
-                if generation != self.screen_generation {
-                    return Task::none();
-                }
-                let size = size.filter(|(width, height)| {
-                    width.is_finite() && height.is_finite() && *width > 0.0 && *height > 0.0
-                });
-                if self.screen_size != size {
-                    self.screen_size = size;
-                }
-                if std::mem::take(&mut self.popup_pending) {
-                    return self.open_popup();
-                }
-            }
+            Message::ScreenSize(size) => self.screen_size = Some(size),
             Message::OverviewViewed(id) => self.overview_viewed(id),
             Message::Agenda(message) => return self.agenda.update(message),
             Message::TogglePopup => {
@@ -1917,12 +1891,7 @@ impl cosmic::Application for AppModel {
                     }
                     return destroy_popup(id);
                 }
-                if self.popup_pending {
-                    self.popup_pending = false;
-                    return Task::none();
-                }
-                self.popup_pending = true;
-                return self.query_screen_size();
+                return self.open_popup();
             }
             Message::PopupClosed(id) => {
                 if self.popup == Some(id) {
@@ -2680,16 +2649,13 @@ mod tests {
     }
 
     #[test]
-    fn popup_limits_follow_logical_monitor_height_and_reject_stale_queries() {
+    fn popup_limits_follow_logical_output_height_changes() {
         let mut app = AppModel::new(cosmic::Core::default());
-        app.screen_generation = 2;
-        let _ = cosmic::Application::update(&mut app, Message::ScreenSize(2, Some((720.0, 960.0))));
+        let _ = cosmic::Application::update(&mut app, Message::ScreenSize((720.0, 960.0)));
         assert_eq!(app.popup_size(), (720.0, 720.0));
-        let _ =
-            cosmic::Application::update(&mut app, Message::ScreenSize(1, Some((1920.0, 1080.0))));
-        assert_eq!(app.popup_size(), (720.0, 720.0));
-        let _ =
-            cosmic::Application::update(&mut app, Message::ScreenSize(2, Some((1536.0, 864.0))));
+        let _ = cosmic::Application::update(&mut app, Message::ScreenSize((1920.0, 1080.0)));
+        assert_eq!(app.popup_size(), (820.0, 810.0));
+        let _ = cosmic::Application::update(&mut app, Message::ScreenSize((1536.0, 864.0)));
         assert_eq!(app.popup_size(), (820.0, 648.0));
     }
 

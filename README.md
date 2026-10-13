@@ -7,7 +7,7 @@ A standalone COSMIC panel clock with a GNOME-style, two-column dropdown. It does
 - **Default right column:** a navigable month calendar and local agenda, MET Norway weather, and world clocks.
 - **Settings:** section order and left/right placement, individual clock order, geographic world-clock search, 12/24-hour time, optional seconds, Monday/Sunday week start, ISO week numbers, weather city, and Celsius/Fahrenheit.
 
-The dropdown uses an opaque theme-colored background and grows up to **75% of the current monitor's logical height**. Each column scrolls independently beyond that limit. The notification footer contains **Settings**, **Clear**, then **Do Not Disturb**. Settings and the task editor use a bounded-height view with scrollable controls and visible action buttons.
+The dropdown uses an opaque theme-colored background and grows up to **75% of the current monitor's logical height**. It follows the panel's named Wayland output, including scaled logical dimensions, rather than an unsupported native window-monitor query that previously left the height capped at 710 pixels. Each column scrolls independently only when its content exceeds that limit. Sections use a compact 9-pixel gap, including below the calendar actions. The notification footer contains **Settings**, **Clear**, then **Do Not Disturb**. Settings and the task editor use a bounded-height view with scrollable controls and visible action buttons.
 
 ## Calendar, tasks and reminders
 
