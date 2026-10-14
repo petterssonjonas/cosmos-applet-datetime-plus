@@ -5,7 +5,7 @@ A standalone COSMIC panel clock with a GNOME-style, two-column dropdown. It does
 - **Panel:** content-sized weekday, day, month, time and the native COSMIC chat-bubble icon; an unread dot, no hover tooltip.
 - **Default left column:** currently playing MPRIS media cards with previous/play-pause/next controls; clickable notification cards, supplied secondary actions, individual dismissal, Clear, and COSMIC's shared Do Not Disturb setting. Paused/stopped players and the empty media section are hidden.
 - **Default right column:** a navigable month calendar and local agenda, MET Norway weather, and world clocks.
-- **Settings:** section order and left/right placement, individual clock order, geographic world-clock search, 12/24-hour time, optional seconds, Monday/Sunday week start, ISO week numbers, weather city, and Celsius/Fahrenheit.
+- **Settings:** section order and left/right placement, individual clock order, geographic world-clock search, notification preview character limit, 12/24-hour time, optional seconds, Monday/Sunday week start, ISO week numbers, weather city, and Celsius/Fahrenheit.
 
 The dropdown uses an opaque theme-colored background and grows up to **75% of the current monitor's logical height**. It follows the panel's named Wayland output, including scaled logical dimensions, rather than an unsupported native window-monitor query that previously left the height capped at 710 pixels. Each column scrolls independently only when its content exceeds that limit. Sections use a compact 9-pixel gap, including below the calendar actions. The notification footer contains **Settings**, **Clear**, then **Do Not Disturb**. Settings and the task editor use a bounded-height view with scrollable controls and visible action buttons.
 
@@ -25,7 +25,7 @@ The local agenda supports up to 512 entries, 160-character titles and reminders 
 
 ## Layout and world clocks
 
-In Settings, use **Left/Right** and **Up/Down** for Media, Notifications, Calendar and agenda, Weather, and World clocks. Up/Down moves a section within its selected column. Each configured clock also has Up/Down and Remove controls. **Save** applies the draft; **Cancel** leaves saved preferences unchanged. Existing settings gain the default section layout without losing saved clocks or weather settings.
+In Settings, use **Left/Right** and **Up/Down** for Media, Notifications, Calendar and agenda, Weather, and World clocks. Up/Down moves a section within its selected column. Each configured clock also has Up/Down and Remove controls. **Save** applies the draft after saving succeeds; **Cancel** leaves saved preferences unchanged. Existing settings gain the default section layout and 100-character notification preview limit without losing saved clocks, weather settings, or other choices.
 
 World-clock search is offline and includes cities, administrative regions, countries, aliases and country codes. Searches such as **Dallas**, **Austin**, or **Texas** return geographic locations, not just timezone identifiers. Different cities sharing a timezone can be added independently. Regions spanning timezones return actual city choices; Texas is not treated as a single timezone. Raw IANA timezone search and custom labels remain available.
 
@@ -53,6 +53,8 @@ For development, `just run` starts the applet, but **notification reception requ
 The applet uses COSMIC's private notification-applet protocol for incoming notifications/actions, and the standard session D-Bus notification interface for dismissal. Do Not Disturb updates only the existing `com.system76.CosmicNotifications` version-1 `do_not_disturb` key. Changes from other COSMIC controls remain synchronized.
 
 COSMIC does not replay existing applet history to a new connection. This applet collects incoming notifications while running, retaining at most 100 entries in memory; it does not write their contents to disk. Expired, non-transient notifications can remain as history, but their actions are disabled once the daemon closes them. Transient notifications are not retained after closure. Replacing an existing notification ID replaces its previous card and action bindings.
+
+**Dropdown preview limit** in applet Settings defaults to **100 Unicode characters**, adjustable from **25 to 2000** using the native number control in 25-character steps. The summary and body share this total budget, including any truncation ellipsis; app name, time, and action buttons are separate. Repeated spaces, tabs, and line breaks are compacted in the preview so blank-line-heavy responses cannot stretch cards. Only the text displayed inside this applet is shortened: original notification contents and in-memory history remain intact, and no full-body hover tooltip bypasses the limit. This setting does not change COSMIC's native desktop notification banners or daemon.
 
 Clicking a notification card invokes the sender's **default action**, when one is supplied. Secondary-action and dismissal buttons remain independent and do not also activate the card. The panel dot clears when the notification overview is actually drawn, not when settings or a reminder window opens.
 
@@ -97,7 +99,7 @@ The panel clock updates on wall-clock minute boundaries by default, or second bo
 just check
 ```
 
-The behavioral suite covers calendar/year/leap/DST boundaries, saved-preference failures and transactions, layout/order persistence, geographic search, agenda CRUD/concurrency/deadline/delivery recovery, stale asynchronous results, notification lifecycles and image bounds, MPRIS capability/ownership changes, and weather parsing/cache/cooldown behavior. Tests use isolated temporary files and do not contact real weather providers or modify the user's notification/media state.
+The behavioral suite covers calendar/year/leap/DST boundaries, saved-preference failures and transactions, notification preview character budgets/Unicode/whitespace and preference migration, layout/order persistence, geographic search, agenda CRUD/concurrency/deadline/delivery recovery, stale asynchronous results, notification lifecycles and image bounds, MPRIS capability/ownership changes, and weather parsing/cache/cooldown behavior. Tests use isolated temporary files and do not contact real weather providers or modify the user's notification/media state.
 
 Remove this applet's panel entry before running `just uninstall`. Uninstallation removes this applet's executable, desktop/icon registration and installed geographic attribution, not the stock applets. Preferences, agenda and cache are retained.
 

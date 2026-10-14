@@ -26,6 +26,7 @@ use std::{
     time::{Duration, Instant},
 };
 
+use crate::notification_preview::notification_preview;
 const POPUP_WIDTH: f32 = 820.0;
 const INITIAL_POPUP_HEIGHT: f32 = 710.0;
 const HISTORY_LIMIT: usize = 100;
@@ -215,6 +216,7 @@ pub enum Message {
     ShowSeconds(bool),
     MondayFirst(bool),
     WeekNumbers(bool),
+    NotificationPreviewLimit(u32),
     Unit(TemperatureUnit),
     TimezoneQuery(String),
     ClockLabel(String),
@@ -276,6 +278,7 @@ impl std::fmt::Debug for Message {
             Self::ShowSeconds(_) => "ShowSeconds",
             Self::MondayFirst(_) => "MondayFirst",
             Self::WeekNumbers(_) => "WeekNumbers",
+            Self::NotificationPreviewLimit(_) => "NotificationPreviewLimit",
             Self::Unit(_) => "Unit",
             Self::TimezoneQuery(_) => "TimezoneQuery",
             Self::ClockLabel(_) => "ClockLabel",
@@ -1123,6 +1126,11 @@ impl AppModel {
             .into()
         };
         let age = notification_age(self.now.with_timezone(&Utc), notification.received_at);
+        let (summary, body) = notification_preview(
+            &notification.summary,
+            &notification.body,
+            self.preferences.notification_preview_limit as usize,
+        );
         let mut content = widget::column([])
             .width(Length::Fill)
             .spacing(6)
@@ -1152,9 +1160,9 @@ impl AppModel {
                 .spacing(8)
                 .align_y(Alignment::Center),
             )
-            .push(widget::text(&notification.summary).size(14));
-        if !notification.body.is_empty() {
-            content = content.push(widget::text(&notification.body).size(13));
+            .push(widget::text(summary).size(14));
+        if !body.is_empty() {
+            content = content.push(widget::text(body).size(13));
         }
         if entry.active {
             for action in notification
@@ -1342,6 +1350,34 @@ impl AppModel {
                 .into(),
             ])
             .spacing(14),
+        );
+        let notification_settings = card(
+            widget::column([
+                widget::text::title4("Notifications").into(),
+                widget::text("Dropdown preview limit (characters)").size(14).into(),
+                widget::spin_button(
+                    draft.notification_preview_limit.to_string(),
+                    "Dropdown preview limit",
+                    draft.notification_preview_limit,
+                    25,
+                    if editable {
+                        config::NOTIFICATION_PREVIEW_MIN
+                    } else {
+                        draft.notification_preview_limit
+                    },
+                    if editable {
+                        config::NOTIFICATION_PREVIEW_MAX
+                    } else {
+                        draft.notification_preview_limit
+                    },
+                    Message::NotificationPreviewLimit,
+                )
+                .into(),
+                widget::text("Limits summary and body text in this applet's notification cards. Original notifications and click actions remain unchanged. COSMIC's desktop popups are not affected.")
+                    .size(12)
+                    .into(),
+            ])
+            .spacing(12),
         );
         let mut layout = widget::column([])
             .spacing(8)
@@ -1631,7 +1667,13 @@ impl AppModel {
         }
         let body = widget::row([
             widget::scrollable(
-                widget::column([clock_settings, card(layout), card(world)]).spacing(12),
+                widget::column([
+                    clock_settings,
+                    notification_settings,
+                    card(layout),
+                    card(world),
+                ])
+                .spacing(12),
             )
             .width(Length::FillPortion(1))
             .height(Length::Fill)
@@ -2025,6 +2067,13 @@ impl cosmic::Application for AppModel {
                     && let Some(draft) = &mut self.draft
                 {
                     draft.show_week_numbers = value;
+                }
+            }
+            Message::NotificationPreviewLimit(value) => {
+                if self.editable()
+                    && let Some(draft) = &mut self.draft
+                {
+                    draft.notification_preview_limit = value;
                 }
             }
             Message::Unit(value) => {
@@ -2537,6 +2586,117 @@ fn error_text<'a>(message: &'a str) -> Element<'a, Message> {
 mod tests {
     use super::*;
     use chrono::TimeZone;
+
+    #[test]
+    fn notification_previews_handle_below_exact_and_above_character_budget() {
+        for (text, limit, expected) in [
+            ("short", 6, "short"),
+            ("short", 5, "short"),
+            ("shorter", 5, "shor…"),
+            ("long", 1, "…"),
+            ("long", 0, ""),
+        ] {
+            let (summary, body) = notification_preview(text, "", limit);
+            assert_eq!(summary, expected);
+            assert!(body.is_empty());
+            assert!(summary.chars().count() <= limit);
+        }
+    }
+
+    #[test]
+    fn notification_previews_count_unicode_characters_including_ellipsis() {
+        let (summary, body) = notification_preview("東京🦀é", "☀️", 5);
+        assert_eq!(summary, "東京🦀é");
+        assert_eq!(body, "…");
+        assert_eq!(summary.chars().count() + body.chars().count(), 5);
+        let (summary, body) = notification_preview("東京🦀é", "", 3);
+        assert_eq!(summary, "東京…");
+        assert!(body.is_empty());
+    }
+
+    #[test]
+    fn notification_summary_and_body_share_one_preview_budget() {
+        for (summary, body, limit, expected_summary, expected_body) in [
+            ("Title", "response is long", 10, "Title", "resp…"),
+            ("1234567890", "response", 10, "123456789…", ""),
+            ("123456789012345", "response", 10, "123456789…", ""),
+            ("Title", "body", 9, "Title", "body"),
+            ("", "response is long", 10, "", "response …"),
+        ] {
+            let (summary, body) = notification_preview(summary, body, limit);
+            assert_eq!(summary, expected_summary);
+            assert_eq!(body, expected_body);
+            assert!(summary.chars().count() + body.chars().count() <= limit);
+        }
+        let response = "ChatGPT response\n\n".repeat(10_000);
+        let (summary, body) = notification_preview("ChatGPT", &response, 250);
+        assert_eq!(summary.chars().count() + body.chars().count(), 250);
+        assert!(body.ends_with('…'));
+    }
+
+    #[test]
+    fn notification_previews_compact_whitespace_without_blank_lines() {
+        let (summary, body) = notification_preview(
+            " \tTitle\n\nwith\u{2003}spaces ",
+            "\n\n \r\nFirst\t\tline\n\n\nSecond\u{a0}line\n\n",
+            100,
+        );
+        assert_eq!(summary, "Title with spaces");
+        assert_eq!(body, "First line Second line");
+        let blanks = "\n".repeat(10_000);
+        let body = format!("First{blanks}second{blanks}third");
+        let (summary, body) = notification_preview(&blanks, &body, 12);
+        assert!(summary.is_empty());
+        assert_eq!(body, "First secon…");
+    }
+
+    #[test]
+    fn rendering_preview_preserves_original_history_and_default_action_binding() {
+        let mut app = AppModel::new(cosmic::Core::default());
+        let mut original = notification(42, false);
+        original.summary = "Long summary ".repeat(100);
+        original.body = "Raw\n\nnotification\tbody ".repeat(100);
+        original.actions.push(notifications::NotificationAction {
+            key: "default".into(),
+            label: "Open sender".into(),
+        });
+        app.history.receive(original.clone());
+        let revision = app.history.action_revision(42, "default");
+        let _ = app.notification_view(&app.history.entries[0]);
+        let stored = &app.history.entries[0].notification;
+        assert_eq!(stored.summary, original.summary);
+        assert_eq!(stored.body, original.body);
+        assert_eq!(stored.actions[0].key, original.actions[0].key);
+        assert_eq!(app.history.action_revision(42, "default"), revision);
+        assert!(revision.is_some());
+    }
+
+    #[test]
+    fn notification_preview_drafts_require_successful_save_and_cancel_discards_changes() {
+        let mut app = AppModel::new(cosmic::Core::default());
+        app.config_ready = true;
+        let _ = cosmic::Application::update(&mut app, Message::OpenSettings);
+        let _ = cosmic::Application::update(&mut app, Message::NotificationPreviewLimit(50));
+        assert_eq!(app.draft.as_ref().unwrap().notification_preview_limit, 50);
+        assert_eq!(app.preferences.notification_preview_limit, 100);
+        let _ = cosmic::Application::update(&mut app, Message::CancelSettings);
+        assert!(app.draft.is_none());
+        assert_eq!(app.preferences.notification_preview_limit, 100);
+
+        let _ = cosmic::Application::update(&mut app, Message::OpenSettings);
+        let _ = cosmic::Application::update(&mut app, Message::NotificationPreviewLimit(375));
+        let (generation, saved) = app.begin_save().unwrap();
+        assert_eq!(saved.notification_preview_limit, 375);
+        let _ = cosmic::Application::update(&mut app, Message::NotificationPreviewLimit(2000));
+        assert_eq!(app.draft.as_ref().unwrap().notification_preview_limit, 375);
+        assert_eq!(app.preferences.notification_preview_limit, 100);
+        assert!(!app.finish_save(generation, Err("disk full".into())));
+        assert_eq!(app.preferences.notification_preview_limit, 100);
+        let (generation, _) = app.begin_save().unwrap();
+        assert!(app.finish_save(generation, Ok(())));
+        assert_eq!(app.preferences.notification_preview_limit, 375);
+        assert!(app.draft.is_none());
+    }
 
     #[test]
     fn unread_clears_only_after_notification_overview_frame() {

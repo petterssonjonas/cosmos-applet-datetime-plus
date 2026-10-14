@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 use std::path::Path;
 
 pub const APP_ID: &str = "io.github.cosmic-applet-datetime-plus";
+pub const NOTIFICATION_PREVIEW_MIN: u32 = 25;
+pub const NOTIFICATION_PREVIEW_MAX: u32 = 2000;
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -82,6 +84,7 @@ pub struct Preferences {
     pub show_seconds: bool,
     pub week_start_monday: bool,
     pub show_week_numbers: bool,
+    pub notification_preview_limit: u32,
     pub temperature_unit: TemperatureUnit,
     pub weather_location: Option<WeatherLocation>,
     pub clocks: Vec<WorldClock>,
@@ -95,6 +98,7 @@ impl Default for Preferences {
             show_seconds: false,
             week_start_monday: true,
             show_week_numbers: true,
+            notification_preview_limit: 100,
             temperature_unit: TemperatureUnit::Celsius,
             weather_location: None,
             clocks: vec![WorldClock {
@@ -117,6 +121,13 @@ impl Default for Preferences {
 
 impl Preferences {
     pub fn validate(&self) -> Result<(), String> {
+        if !(NOTIFICATION_PREVIEW_MIN..=NOTIFICATION_PREVIEW_MAX)
+            .contains(&self.notification_preview_limit)
+        {
+            return Err(format!(
+                "Notification preview limit must be {NOTIFICATION_PREVIEW_MIN}–{NOTIFICATION_PREVIEW_MAX} characters."
+            ));
+        }
         if self.layout.len() != Section::ALL.len()
             || Section::ALL.iter().any(|section| {
                 self.layout
@@ -219,6 +230,30 @@ mod tests {
         assert_eq!(preferences.clocks[0].label, "Dallas");
         assert_eq!(preferences.clocks[0].timezone, "America/Chicago");
         assert_eq!(preferences.layout, Preferences::default().layout);
+        assert_eq!(preferences.notification_preview_limit, 100);
+    }
+
+    #[test]
+    fn notification_preview_bounds_accept_endpoints_and_reject_invalid_saved_values() {
+        for limit in [NOTIFICATION_PREVIEW_MIN, NOTIFICATION_PREVIEW_MAX] {
+            let bytes = serde_json::to_vec(&serde_json::json!({
+                "version": 1, "preferences": { "notification_preview_limit": limit }
+            }))
+            .unwrap();
+            assert_eq!(decode(&bytes).unwrap().notification_preview_limit, limit);
+        }
+        for limit in [
+            0,
+            NOTIFICATION_PREVIEW_MIN - 1,
+            NOTIFICATION_PREVIEW_MAX + 1,
+            u32::MAX,
+        ] {
+            let bytes = serde_json::to_vec(&serde_json::json!({
+                "version": 1, "preferences": { "notification_preview_limit": limit }
+            }))
+            .unwrap();
+            assert!(decode(&bytes).is_err(), "Accepted invalid limit {limit}");
+        }
     }
 
     #[test]
@@ -271,6 +306,7 @@ mod tests {
         let preferences = Preferences {
             twenty_four_hour: false,
             layout,
+            notification_preview_limit: 375,
             weather_location: Some(WeatherLocation {
                 name: "Oslo".into(),
                 latitude: 59.9139,
@@ -295,6 +331,10 @@ mod tests {
         );
         let mut invalid = preferences.clone();
         invalid.clocks[0].timezone = "Not/AZone".into();
+        assert!(save_to(&path, &invalid).await.is_err());
+        assert_eq!(load_from(&path).await.unwrap(), preferences);
+        invalid = preferences.clone();
+        invalid.notification_preview_limit = NOTIFICATION_PREVIEW_MIN - 1;
         assert!(save_to(&path, &invalid).await.is_err());
         assert_eq!(load_from(&path).await.unwrap(), preferences);
         fs::write(&path, b"{broken").await.unwrap();

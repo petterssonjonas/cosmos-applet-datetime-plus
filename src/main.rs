@@ -6,6 +6,7 @@ mod config;
 mod display;
 mod launcher;
 mod media;
+mod notification_preview;
 mod notifications;
 mod notifier;
 mod places;
