@@ -192,7 +192,7 @@ impl cosmic::Application for Notifier {
     type Executor = cosmic::executor::Default;
     type Flags = Flags;
     type Message = Message;
-    const APP_ID: &'static str = "dev.jp.CosmicAppletDatetimePlus.TaskNotifier";
+    const APP_ID: &'static str = "dev.jp.CosmosAppletDatetimePlus.TaskNotifier";
 
     fn core(&self) -> &cosmic::Core {
         &self.core
@@ -219,7 +219,7 @@ impl cosmic::Application for Notifier {
         };
         app.set_header_title("Reminder".to_owned());
         let task = if let Some(id) = app.core.main_window_id() {
-            app.set_window_title("Datetime Plus — Reminder".to_owned(), id)
+            app.set_window_title("Cosmos Date & Time — Reminder".to_owned(), id)
         } else {
             Task::none()
         };

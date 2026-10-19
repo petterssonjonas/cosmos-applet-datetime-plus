@@ -20,7 +20,7 @@ fn main() -> cosmic::iced::Result {
             .and_then(|value| value.to_str()?.parse::<u64>().ok());
         let result = match (id, args.next()) {
             (Some(id), None) => notifier::run(id),
-            _ => Err("Usage: cosmic-applet-datetime-plus --task-notifier <entry-id>".into()),
+            _ => Err("Usage: cosmos-applet-datetime-plus --task-notifier <entry-id>".into()),
         };
         if let Err(error) = result {
             eprintln!("{error}");

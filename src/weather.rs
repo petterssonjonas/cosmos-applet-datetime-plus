@@ -29,7 +29,8 @@ use tokio::{
     sync::Mutex,
 };
 
-const USER_AGENT: &str = "cosmic-applet-datetime-plus/0.1.0";
+const USER_AGENT: &str =
+    "cosmos-applet-datetime-plus/0.1.0 (https://github.com/petterssonjonas/cosmos-applet-datetime-plus)";
 const FORECAST_URL: &str = "https://api.met.no/weatherapi/locationforecast/2.0/compact";
 const SEARCH_URL: &str = "https://geocoding-api.open-meteo.com/v1/search";
 const MIN_CADENCE: i64 = 15 * 60;
@@ -295,7 +296,7 @@ impl Client {
         if !root.is_absolute() {
             return Err("The weather cache directory must be an absolute path.".into());
         }
-        Self::with_cache(root.join("cosmic-applet-datetime-plus"), http_client()?)
+        Self::with_cache(root.join("cosmos-applet-datetime-plus"), http_client()?)
     }
 
     fn with_cache(cache_dir: PathBuf, http: reqwest::Client) -> Result<Self, String> {

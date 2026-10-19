@@ -180,7 +180,7 @@ def main():
         with tempfile.TemporaryDirectory(prefix="datetime-geonames-") as temporary:
             source = Path(temporary)
             for name in FILES:
-                request = urllib.request.Request(BASE + name, headers={"User-Agent": "DatetimePlus-place-data-generator/1"})
+                request = urllib.request.Request(BASE + name, headers={"User-Agent": "CosmosDatetimePlus-place-data-generator/1"})
                 with urllib.request.urlopen(request, timeout=90) as response:
                     (source / name).write_bytes(response.read())
             generate(source, output, args.snapshot_date)

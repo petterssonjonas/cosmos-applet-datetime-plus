@@ -30,7 +30,7 @@ pub(crate) fn data_path(filename: &str) -> Result<PathBuf, String> {
     if !root.is_absolute() {
         return Err("The configuration directory must be an absolute path.".into());
     }
-    Ok(root.join("cosmic-applet-datetime-plus").join(filename))
+    Ok(root.join("cosmos-applet-datetime-plus").join(filename))
 }
 
 pub(crate) async fn read(path: &Path) -> Result<Option<Vec<u8>>, String> {

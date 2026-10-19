@@ -18,7 +18,7 @@ use cosmic::iced::platform_specific::shell::wayland::commands::popup::{destroy_p
 use cosmic::iced::{Alignment, Length, Limits, Subscription, window::Id};
 use cosmic::prelude::*;
 use cosmic::widget;
-use cosmic_applet_datetime_plus::weather::{self, WeatherLocation};
+use cosmos_applet_datetime_plus::weather::{self, WeatherLocation};
 use std::{
     collections::{HashMap, HashSet, VecDeque},
     path::PathBuf,
@@ -1705,7 +1705,7 @@ impl AppModel {
         widget::column([
             widget::row([
                 action_button("Back", Message::Back, self.pending_save.is_none()),
-                widget::text::title3("Datetime Plus Settings")
+                widget::text::title3("Cosmos Date & Time Settings")
                     .width(Length::Fill)
                     .into(),
             ])
@@ -1804,9 +1804,9 @@ impl cosmic::Application for AppModel {
             .center_y(Length::Fixed(f32::from(suggested.1 + 2 * vertical))),
         )
         .name(if self.history.unread() {
-            "Open Datetime Plus calendar and notifications; unread notifications"
+            "Open Cosmos Date & Time calendar and notifications; unread notifications"
         } else {
-            "Open Datetime Plus calendar and notifications"
+            "Open Cosmos Date & Time calendar and notifications"
         })
         .on_press_down(Message::TogglePopup)
         .padding([0, horizontal])

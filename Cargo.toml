@@ -1,9 +1,9 @@
 [package]
-name = "cosmic-applet-datetime-plus"
+name = "cosmos-applet-datetime-plus"
 version = "0.1.0"
 edition = "2024"
 license = "GPL-3.0-only"
-description = "COSMIC clock with notifications, calendar, media, world clocks and weather"
+description = "Cosmos Date & Time: clock, notifications, calendar, media and weather for COSMIC"
 
 [dependencies]
 libcosmic = { git = "https://github.com/pop-os/libcosmic.git", default-features = false, features = ["applet", "a11y", "dbus-config"] }

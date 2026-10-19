@@ -4,7 +4,7 @@ use std::{env, ffi::OsStr, os::unix::ffi::OsStrExt, path::PathBuf, process::Stdi
 use tokio::process::Command;
 
 use crate::config::TemperatureUnit;
-use cosmic_applet_datetime_plus::weather::WeatherLocation;
+use cosmos_applet_datetime_plus::weather::WeatherLocation;
 
 /// Start a desktop application without the panel's private Wayland/notification sockets.
 pub fn desktop_command(program: impl AsRef<OsStr>) -> Command {
@@ -69,10 +69,10 @@ pub async fn open_weather(
         })
         .transpose()?;
     let local =
-        env::var_os("HOME").map(|home| PathBuf::from(home).join(".local/bin/cosmic-weather"));
+        env::var_os("HOME").map(|home| PathBuf::from(home).join(".local/bin/cosmos-weather"));
     let mut command = match local {
         Some(path) if path.is_file() => desktop_command(path),
-        _ => desktop_command("cosmic-weather"),
+        _ => desktop_command("cosmos-weather"),
     };
     if let Some(location) = location {
         command.arg("--location-json").arg(location);
@@ -86,7 +86,7 @@ pub async fn open_weather(
         .stdout(Stdio::null())
         .spawn()
         .map_err(|error| {
-            format!("Could not open Weather: {error}. Install cosmic-weather and try again.")
+            format!("Could not open Cosmos Weather: {error}. Install cosmos-weather and try again.")
         })?;
     tokio::spawn(async move {
         let _ = child.wait().await;

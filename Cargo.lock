@@ -945,28 +945,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cosmic-applet-datetime-plus"
-version = "0.1.0"
-dependencies = [
- "chrono",
- "chrono-tz",
- "futures-util",
- "iana-time-zone",
- "image",
- "libc",
- "libcosmic",
- "notify",
- "reqwest",
- "roxmltree",
- "serde",
- "serde_json",
- "tokio",
- "unicode-normalization",
- "url",
- "zbus",
-]
-
-[[package]]
 name = "cosmic-client-toolkit"
 version = "0.2.0"
 source = "git+https://github.com/pop-os/cosmic-protocols?rev=c0cff4d#c0cff4db14c37ed954983158e4055aa94c7741d9"
@@ -1099,6 +1077,28 @@ dependencies = [
  "serde",
  "serde_json",
  "thiserror 2.0.21",
+]
+
+[[package]]
+name = "cosmos-applet-datetime-plus"
+version = "0.1.0"
+dependencies = [
+ "chrono",
+ "chrono-tz",
+ "futures-util",
+ "iana-time-zone",
+ "image",
+ "libc",
+ "libcosmic",
+ "notify",
+ "reqwest",
+ "roxmltree",
+ "serde",
+ "serde_json",
+ "tokio",
+ "unicode-normalization",
+ "url",
+ "zbus",
 ]
 
 [[package]]

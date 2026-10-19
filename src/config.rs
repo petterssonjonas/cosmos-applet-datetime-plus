@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0-only
 
 use crate::storage;
-use cosmic_applet_datetime_plus::weather::WeatherLocation;
+use cosmos_applet_datetime_plus::weather::WeatherLocation;
 use serde::{Deserialize, Serialize};
 use std::path::Path;
 
-pub const APP_ID: &str = "io.github.cosmic-applet-datetime-plus";
+pub const APP_ID: &str = "dev.jp.CosmosAppletDatetimePlus";
 pub const NOTIFICATION_PREVIEW_MIN: u32 = 25;
 pub const NOTIFICATION_PREVIEW_MAX: u32 = 2000;
 
