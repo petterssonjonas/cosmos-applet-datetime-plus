@@ -54,6 +54,10 @@ Use `sudo` only for system package prerequisites, never for `just build-release`
 
 In **COSMIC Settings → Desktop → Panel → Applets**, add **Cosmos Date & Time**. Reopen Settings or log in again if necessary. It can coexist with the stock clock and notification applet. Remove their panel entries yourself if desired. Installation never edits panel configuration.
 
+For a rendering check, run `just run` inside the COSMIC desktop session. This opens a small clock button, not the calendar itself; click it to open the calendar. Standalone launches size to their contents rather than treating the compositor's available desktop area as a fixed panel allocation.
+
+If the panel applet is missing, inspect `journalctl --user -b _COMM=cosmic-panel --no-pager`. COSMIC launches entries marked `X-NotificationsApplet=true` only after connecting to the notification daemon through the private socket supplied by `cosmic-session`; a directly launched panel without that socket skips this applet. An empty standalone window and a panel entry that never launches are different failures.
+
 ## Notifications, media and reminders
 
 Panel launch supplies the private `COSMIC_NOTIFICATIONS` socket. A terminal launch with `just run` cannot receive panel notifications. The applet supports default and secondary notification actions, dismissal, Clear and COSMIC's shared Do Not Disturb setting. It does not replace the daemon or change other notification settings.

@@ -1812,7 +1812,14 @@ impl cosmic::Application for AppModel {
         .padding([0, horizontal])
         .width(Length::Shrink)
         .class(cosmic::theme::Button::AppletIcon);
-        self.core.applet.autosize_window(button).into()
+        let autosize = self.core.applet.autosize_window(button);
+        // Desktop configure_bounds is available space, not a fixed panel allocation.
+        match &self.core.applet.panel_type {
+            cosmic::applet::PanelType::Other(name) if name.is_empty() => {
+                autosize.limits(Limits::NONE).into()
+            }
+            _ => autosize.into(),
+        }
     }
 
     fn view_window(&self, _id: Id) -> Element<'_, Message> {
