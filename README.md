@@ -37,6 +37,8 @@ sudo pacman -S --needed git just base-devel cmake pkgconf desktop-file-utils \
 
 These are build/install packages, not extra applet runtime programs. Rust tests use `just test`; `just check` also needs the rustup Clippy component.
 
+The checked-in lockfile pins [libcosmic `95236a9`](https://github.com/pop-os/libcosmic/commit/95236a944bfd51c63a2fc65fe50a592c47168d40), including the COSMIC 1.11-era Iced updates and the later privileged-socket inheritance fix. Use the locked build recipes when upgrading. The standalone sizing workaround remains necessary with this upstream revision.
+
 ## Build and install
 
 Install rustup from its linked site first. Run as your desktop user:
