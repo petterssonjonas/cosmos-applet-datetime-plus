@@ -29,8 +29,7 @@ use tokio::{
     sync::Mutex,
 };
 
-const USER_AGENT: &str =
-    "cosmos-applet-datetime-plus/0.1.0 (https://github.com/petterssonjonas/cosmos-applet-datetime-plus)";
+const USER_AGENT: &str = "cosmos-applet-datetime-plus/0.1.0 (https://github.com/petterssonjonas/cosmos-applet-datetime-plus)";
 const FORECAST_URL: &str = "https://api.met.no/weatherapi/locationforecast/2.0/compact";
 const SEARCH_URL: &str = "https://geocoding-api.open-meteo.com/v1/search";
 const MIN_CADENCE: i64 = 15 * 60;

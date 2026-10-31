@@ -6,6 +6,7 @@
 mod calendar;
 
 pub mod agenda_ui;
+pub mod timer_ui;
 
 use crate::{
     agenda,
@@ -143,6 +144,7 @@ pub struct AppModel {
     local_zone_minute: i64,
     calendar: calendar::Calendar,
     agenda: agenda_ui::AgendaUi,
+    timer: timer_ui::TimerUi,
     preferences: Preferences,
     draft: Option<Preferences>,
     config_ready: bool,
@@ -228,6 +230,7 @@ pub enum Message {
     MoveSection(Section, bool),
     SectionSide(Section, Side),
     Agenda(agenda_ui::Message),
+    Timer(timer_ui::Message),
     CityQuery(String),
     SearchCities,
     CitiesLoaded(u64, Result<Vec<WeatherLocation>, String>),
@@ -290,6 +293,7 @@ impl std::fmt::Debug for Message {
             Self::MoveSection(..) => "MoveSection",
             Self::SectionSide(..) => "SectionSide",
             Self::Agenda(_) => "Agenda",
+            Self::Timer(_) => "Timer",
             Self::CityQuery(_) => "CityQuery",
             Self::SearchCities => "SearchCities",
             Self::CitiesLoaded(..) => "CitiesLoaded",
@@ -333,6 +337,7 @@ impl AppModel {
             local_zone_minute: now.timestamp().div_euclid(60),
             calendar: calendar::Calendar::new(now.date_naive()),
             agenda: agenda_ui::AgendaUi::default(),
+            timer: timer_ui::TimerUi::default(),
             preferences: Preferences::default(),
             draft: None,
             config_ready: false,
@@ -1278,6 +1283,7 @@ impl AppModel {
             }
             Section::Notifications => self.notifications_view(),
             Section::Calendar => self.calendar_view(),
+            Section::Timer => card(self.timer.view()),
             Section::Weather => self.weather_view(),
             Section::WorldClocks => self.clock_view(),
         })
@@ -1751,7 +1757,7 @@ impl cosmic::Application for AppModel {
 
     fn init(core: cosmic::Core, _flags: ()) -> (Self, Task<cosmic::Action<Message>>) {
         let mut app = Self::new(core);
-        let task = app.load_config();
+        let task = Task::batch([app.load_config(), app.timer.load()]);
         (app, task)
     }
 
@@ -1899,6 +1905,7 @@ impl cosmic::Application for AppModel {
             agenda::subscription().map(|event| Message::Agenda(agenda_ui::Message::Event(event))),
             crate::display::panel_size(self.core.applet.output_name.clone())
                 .map(Message::ScreenSize),
+            self.timer.subscription().map(Message::Timer),
         ];
         if let Some(popup) = self.popup
             && self.history.unread()
@@ -1933,6 +1940,7 @@ impl cosmic::Application for AppModel {
             Message::ScreenSize(size) => self.screen_size = Some(size),
             Message::OverviewViewed(id) => self.overview_viewed(id),
             Message::Agenda(message) => return self.agenda.update(message),
+            Message::Timer(message) => return self.timer.update(message, self.dnd),
             Message::TogglePopup => {
                 if let Some(id) = self.popup.take() {
                     if self.pending_save.is_none() {
@@ -2937,7 +2945,17 @@ mod tests {
             .filter(|placement| placement.side == Side::Right)
             .map(|placement| placement.section)
             .collect();
-        assert_eq!(right, [Section::WorldClocks, Section::Weather]);
+        assert!(!right.contains(&Section::Calendar));
+        assert!(
+            right
+                .iter()
+                .position(|section| *section == Section::WorldClocks)
+                .unwrap()
+                < right
+                    .iter()
+                    .position(|section| *section == Section::Weather)
+                    .unwrap()
+        );
         assert!(draft.validate().is_ok());
         let _ = cosmic::Application::update(&mut app, Message::CancelSettings);
         assert_eq!(app.preferences, original);

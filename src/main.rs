@@ -4,6 +4,7 @@ mod agenda;
 mod app;
 mod config;
 mod display;
+mod duration_input;
 mod launcher;
 mod media;
 mod notification_preview;
@@ -11,6 +12,7 @@ mod notifications;
 mod notifier;
 mod places;
 mod storage;
+mod timer;
 
 fn main() -> cosmic::iced::Result {
     let mut args = std::env::args_os().skip(1);

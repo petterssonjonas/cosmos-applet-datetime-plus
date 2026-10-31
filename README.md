@@ -1,10 +1,10 @@
 # Cosmos Date & Time
 
-A COSMIC panel clock with notifications, media controls, a calendar, local tasks, weather and world clocks. Settings control the two-column layout, clock format, notification preview length and temperature unit. The dropdown grows to 75% of the output's logical height. This does not replace the COSMIC notification daemon.
+A COSMIC panel clock with notifications, media controls, a calendar, local tasks, a timer, weather and world clocks. Settings control the two-column layout, clock format, notification preview length and temperature unit. The dropdown grows to 75% of the output's logical height. This does not replace the COSMIC notification daemon.
 
 ## Requirements
 
-Runtime: a COSMIC Wayland desktop and session D-Bus. Notifications require launch through the COSMIC panel. Weather and city lookup need HTTPS access. World-clock search works offline. No Python process is required at runtime.
+Runtime: a COSMIC Wayland desktop and session D-Bus. Notifications require launch through the COSMIC panel. Weather and city lookup need HTTPS access. World-clock search works offline. The optional timer ding uses `canberra-gtk-play` and the system sound theme's `complete` event; on Fedora, install `libcanberra-gtk3`. No Python process is required at runtime.
 
 Build/install: current stable Rust from [rustup](https://rustup.rs), `just`, Bash, GNU coreutils/findutils, Git and native development packages. Distribution Rust can be too old. These package examples do not mean all distributions were tested. See [libcosmic dependencies](https://github.com/pop-os/libcosmic#dependencies).
 
@@ -70,6 +70,18 @@ Select a calendar date and **Add task**. Set a local date, time and reminder int
 
 The local agenda holds up to 512 entries. It has no account synchronization or recurring tasks. Restart the applet and reopen reminder windows after an upgrade to use the new executable.
 
+## Timer
+
+The two-row **Timer** card appears above Weather by default. Move it or change its column in Settings. Existing layouts keep their other cards in place and gain Timer immediately above Weather in the same column.
+
+The single `HH:MM:SS` input keeps its colons fixed. Click a segment or use Tab / Shift+Tab to move between hours, minutes and seconds. Entry starts with hours when the field receives focus. A first digit `1` means `01`; typing `0` next makes `10`. Leaving a segment commits its current value, so `4` minutes followed by Tab means four minutes, not forty. Hours accept `00`–`99`; minutes and seconds accept `00`–`59`.
+
+**Play** starts or resumes, **Pause** freezes the remaining time, and **Reset** restores the configured duration. Reset before changing a running or paused timer. The configured duration and bell preference are saved automatically; countdown time never replaces the preset.
+
+Expiry sends a desktop notification even when the dropdown is closed. Enable the **bell** for the system completion ding. Do Not Disturb silences that ding; COSMIC controls notification presentation. Missing sound support or notification delivery failures appear in the Timer card.
+
+The timer continues while the popup is closed and accounts for time spent suspended when the computer resumes. It does not wake the computer or run after the applet exits or you log out. Restarting restores the saved duration and bell preference, not an active countdown.
+
 ## Weather, data and privacy
 
 Choose a city explicitly in Settings. There is no automatic location detection. City searches send the query and connection IP address to [Open-Meteo / GeoNames](https://open-meteo.com/en/docs/geocoding-api). Forecast requests send selected coordinates, truncated to four decimal places, and connection IP address to [MET Norway](https://api.met.no/weatherapi/locationforecast/2.0/documentation). No accounts, keys or telemetry are used.
@@ -80,7 +92,7 @@ Click the weather card to open [Cosmos Weather](https://github.com/petterssonjon
 
 User files, with standard XDG defaults:
 
-- Preferences and agenda: `~/.config/cosmos-applet-datetime-plus/settings.json` and `agenda.json`. Back up both together.
+- Preferences, agenda and timer preset: `~/.config/cosmos-applet-datetime-plus/settings.json`, `agenda.json` and `timer.json`. Back up these files together.
 - Shared forecast cache and provider request state: `~/.cache/cosmos-applet-datetime-plus/`.
 
 Files are private to your user. Invalid or unsupported saved files are not silently overwritten. World-clock search stays on the computer.

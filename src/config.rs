@@ -30,15 +30,17 @@ pub enum Section {
     Media,
     Notifications,
     Calendar,
+    Timer,
     Weather,
     WorldClocks,
 }
 
 impl Section {
-    pub const ALL: [Self; 5] = [
+    pub const ALL: [Self; 6] = [
         Self::Media,
         Self::Notifications,
         Self::Calendar,
+        Self::Timer,
         Self::Weather,
         Self::WorldClocks,
     ];
@@ -48,6 +50,7 @@ impl Section {
             Self::Media => "Media",
             Self::Notifications => "Notifications",
             Self::Calendar => "Calendar and agenda",
+            Self::Timer => "Timer",
             Self::Weather => "Weather",
             Self::WorldClocks => "World clocks",
         }
@@ -170,11 +173,39 @@ struct SettingsFile<T> {
 }
 
 fn decode(bytes: &[u8]) -> Result<Preferences, String> {
-    let file: SettingsFile<Preferences> = serde_json::from_slice(bytes)
+    let mut file: SettingsFile<Preferences> = serde_json::from_slice(bytes)
         .map_err(|error| format!("Saved settings contain invalid JSON: {error}"))?;
     if file.version != 1 {
         return Err(
             "Saved settings use an unsupported version; the file has not been changed.".into(),
+        );
+    }
+    // Only migrate a complete pre-timer layout; malformed layouts remain errors.
+    if file.preferences.layout.len() == Section::ALL.len() - 1
+        && Section::ALL
+            .into_iter()
+            .filter(|section| *section != Section::Timer)
+            .all(|section| {
+                file.preferences
+                    .layout
+                    .iter()
+                    .filter(|placement| placement.section == section)
+                    .count()
+                    == 1
+            })
+        && let Some(index) = file
+            .preferences
+            .layout
+            .iter()
+            .position(|placement| placement.section == Section::Weather)
+    {
+        let side = file.preferences.layout[index].side;
+        file.preferences.layout.insert(
+            index,
+            SectionPlacement {
+                section: Section::Timer,
+                side,
+            },
         );
     }
     file.preferences.validate()?;
@@ -254,6 +285,79 @@ mod tests {
             .unwrap();
             assert!(decode(&bytes).is_err(), "Accepted invalid limit {limit}");
         }
+    }
+
+    #[test]
+    fn legacy_layout_inserts_timer_before_weather_without_moving_existing_cards() {
+        let layout = vec![
+            SectionPlacement {
+                section: Section::WorldClocks,
+                side: Side::Right,
+            },
+            SectionPlacement {
+                section: Section::Weather,
+                side: Side::Left,
+            },
+            SectionPlacement {
+                section: Section::Calendar,
+                side: Side::Right,
+            },
+            SectionPlacement {
+                section: Section::Media,
+                side: Side::Left,
+            },
+            SectionPlacement {
+                section: Section::Notifications,
+                side: Side::Right,
+            },
+        ];
+        let bytes = serde_json::to_vec(&serde_json::json!({
+            "version": 1,
+            "preferences": { "twenty_four_hour": false, "layout": layout }
+        }))
+        .unwrap();
+        let preferences = decode(&bytes).unwrap();
+        let mut expected = layout;
+        expected.insert(
+            1,
+            SectionPlacement {
+                section: Section::Timer,
+                side: Side::Left,
+            },
+        );
+        assert_eq!(preferences.layout, expected);
+        assert!(!preferences.twenty_four_hour);
+    }
+
+    #[test]
+    fn malformed_legacy_layout_is_not_repaired_or_accepted() {
+        let layout = vec![
+            SectionPlacement {
+                section: Section::Weather,
+                side: Side::Left,
+            },
+            SectionPlacement {
+                section: Section::Calendar,
+                side: Side::Right,
+            },
+            SectionPlacement {
+                section: Section::Media,
+                side: Side::Left,
+            },
+            SectionPlacement {
+                section: Section::Notifications,
+                side: Side::Right,
+            },
+            SectionPlacement {
+                section: Section::Notifications,
+                side: Side::Left,
+            },
+        ];
+        let bytes = serde_json::to_vec(&serde_json::json!({
+            "version": 1, "preferences": { "layout": layout }
+        }))
+        .unwrap();
+        assert!(decode(&bytes).is_err());
     }
 
     #[test]
