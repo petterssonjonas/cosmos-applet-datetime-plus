@@ -266,10 +266,12 @@ async fn send_notification(duration_seconds: u32) -> Result<(), String> {
 
 async fn play_ding() -> Result<(), String> {
     let mut child = desktop_command("canberra-gtk-play")
+        // The bell is an explicit opt-in; Do Not Disturb is checked before this runs.
+        .env("CANBERRA_FORCE_EVENT_SOUNDS", "1")
         .arg("--id=complete")
         .stdin(Stdio::null())
         .stdout(Stdio::null())
-        .stderr(Stdio::null())
+        .stderr(Stdio::inherit())
         .kill_on_drop(true)
         .spawn()
         .map_err(|error| {

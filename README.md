@@ -4,7 +4,7 @@ A COSMIC panel clock with notifications, media controls, a calendar, local tasks
 
 ## Requirements
 
-Runtime: a COSMIC Wayland desktop and session D-Bus. Notifications require launch through the COSMIC panel. Weather and city lookup need HTTPS access. World-clock search works offline. The optional timer ding uses `canberra-gtk-play` and the system sound theme's `complete` event; on Fedora, install `libcanberra-gtk3`. No Python process is required at runtime.
+Runtime: a COSMIC Wayland desktop and session D-Bus. Notifications require launch through the COSMIC panel. Weather and city lookup need HTTPS access. World-clock search works offline. The optional timer ding uses `canberra-gtk-play` and the system sound theme's `complete` event; on Fedora, install `libcanberra-gtk3` and `sound-theme-freedesktop`. No Python process is required at runtime.
 
 Build/install: current stable Rust from [rustup](https://rustup.rs), `just`, Bash, GNU coreutils/findutils, Git and native development packages. Distribution Rust can be too old. These package examples do not mean all distributions were tested. See [libcosmic dependencies](https://github.com/pop-os/libcosmic#dependencies).
 
@@ -79,6 +79,14 @@ The single `HH:MM:SS` input keeps its colons fixed. Click a segment or use Tab /
 **Play** starts or resumes, **Pause** freezes the remaining time, and **Reset** restores the configured duration. Reset before changing a running or paused timer. The configured duration and bell preference are saved automatically; countdown time never replaces the preset.
 
 Expiry sends a desktop notification even when the dropdown is closed. Enable the **bell** for the system completion ding. Do Not Disturb silences that ding; COSMIC controls notification presentation. Missing sound support or notification delivery failures appear in the Timer card.
+
+The bell is an explicit timer-alarm opt-in, so it enables playback for that helper invocation even when GTK's general desktop event sounds are disabled. It does not change system-wide settings or bypass Do Not Disturb. Music and other ordinary audio are independent of this GTK setting. Preview the timer sound with:
+
+```sh
+CANBERRA_FORCE_EVENT_SOUNDS=1 canberra-gtk-play --id=complete
+```
+
+Player diagnostics are also written to the panel's journal when the applet is launched through the panel.
 
 The timer continues while the popup is closed and accounts for time spent suspended when the computer resumes. It does not wake the computer or run after the applet exits or you log out. Restarting restores the saved duration and bell preference, not an active countdown.
 
